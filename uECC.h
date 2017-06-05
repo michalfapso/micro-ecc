@@ -17,6 +17,16 @@ Possible values for uECC_PLATFORM are defined below: */
 #define uECC_arm64      6
 #define uECC_avr        7
 
+#ifdef uECC_DO_ALWAYS_INLINE
+    #if _MSC_VER
+        #define uECC_ALWAYS_INLINE inline __forceinline
+    #else
+        #define uECC_ALWAYS_INLINE inline __attribute__((always_inline))
+    #endif
+#else
+    #define uECC_ALWAYS_INLINE
+#endif
+
 /* If desired, you can define uECC_WORD_SIZE as appropriate for your platform (1, 4, or 8 bytes).
 If uECC_WORD_SIZE is not explicitly defined then it will be automatically set based on your
 platform. */
@@ -127,24 +137,28 @@ be called before uECC_make_key() or uECC_sign() are used.
 Inputs:
     rng_function - The function that will be used to generate random bytes.
 */
+uECC_ALWAYS_INLINE
 void uECC_set_rng(uECC_RNG_Function rng_function);
 
 /* uECC_get_rng() function.
 
 Returns the function that will be used to generate random bytes.
 */
+uECC_ALWAYS_INLINE
 uECC_RNG_Function uECC_get_rng(void);
 
 /* uECC_curve_private_key_size() function.
 
 Returns the size of a private key for the curve in bytes.
 */
+uECC_ALWAYS_INLINE
 int uECC_curve_private_key_size(uECC_Curve curve);
 
 /* uECC_curve_public_key_size() function.
 
 Returns the size of a public key for the curve in bytes.
 */
+uECC_ALWAYS_INLINE
 int uECC_curve_public_key_size(uECC_Curve curve);
 
 /* uECC_make_key() function.
@@ -163,6 +177,7 @@ Outputs:
 
 Returns 1 if the key pair was generated successfully, 0 if an error occurred.
 */
+uECC_ALWAYS_INLINE
 int uECC_make_key(uint8_t *public_key, uint8_t *private_key, uECC_Curve curve);
 
 /* uECC_shared_secret() function.
@@ -180,6 +195,7 @@ Outputs:
 
 Returns 1 if the shared secret was generated successfully, 0 if an error occurred.
 */
+uECC_ALWAYS_INLINE
 int uECC_shared_secret(const uint8_t *public_key,
                        const uint8_t *private_key,
                        uint8_t *secret,
@@ -197,6 +213,7 @@ Outputs:
                  (curve size + 1) bytes long; for example, if the curve is secp256r1,
                  compressed must be 33 bytes long.
 */
+uECC_ALWAYS_INLINE
 void uECC_compress(const uint8_t *public_key, uint8_t *compressed, uECC_Curve curve);
 
 /* uECC_decompress() function.
@@ -208,6 +225,7 @@ Inputs:
 Outputs:
     public_key - Will be filled in with the decompressed public key.
 */
+uECC_ALWAYS_INLINE
 void uECC_decompress(const uint8_t *compressed, uint8_t *public_key, uECC_Curve curve);
 #endif /* uECC_SUPPORT_COMPRESSED_POINT */
 
@@ -223,6 +241,7 @@ Inputs:
 
 Returns 1 if the public key is valid, 0 if it is invalid.
 */
+uECC_ALWAYS_INLINE
 int uECC_valid_public_key(const uint8_t *public_key, uECC_Curve curve);
 
 /* uECC_compute_public_key() function.
@@ -236,6 +255,7 @@ Outputs:
 
 Returns 1 if the key was computed successfully, 0 if an error occurred.
 */
+uECC_ALWAYS_INLINE
 int uECC_compute_public_key(const uint8_t *private_key, uint8_t *public_key, uECC_Curve curve);
 
 /* uECC_sign() function.
@@ -255,6 +275,7 @@ Outputs:
 
 Returns 1 if the signature generated successfully, 0 if an error occurred.
 */
+uECC_ALWAYS_INLINE
 int uECC_sign(const uint8_t *private_key,
               const uint8_t *message_hash,
               unsigned hash_size,
@@ -331,6 +352,7 @@ Outputs:
 
 Returns 1 if the signature generated successfully, 0 if an error occurred.
 */
+uECC_ALWAYS_INLINE
 int uECC_sign_deterministic(const uint8_t *private_key,
                             const uint8_t *message_hash,
                             unsigned hash_size,
@@ -352,6 +374,7 @@ Inputs:
 
 Returns 1 if the signature is valid, 0 if it is invalid.
 */
+uECC_ALWAYS_INLINE
 int uECC_verify(const uint8_t *public_key,
                 const uint8_t *message_hash,
                 unsigned hash_size,
@@ -360,6 +383,10 @@ int uECC_verify(const uint8_t *public_key,
 
 #ifdef __cplusplus
 } /* end of extern "C" */
+#endif
+
+#ifdef uECC_DO_ALWAYS_INLINE
+#    include "uECC.c"
 #endif
 
 #endif /* _UECC_H_ */

@@ -16,6 +16,7 @@
 #include <windows.h>
 #include <wincrypt.h>
 
+uECC_ALWAYS_INLINE
 static int default_RNG(uint8_t *dest, unsigned size) {
     HCRYPTPROV prov;
     if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
@@ -40,6 +41,7 @@ static int default_RNG(uint8_t *dest, unsigned size) {
     #define O_CLOEXEC 0
 #endif
 
+uECC_ALWAYS_INLINE
 static int default_RNG(uint8_t *dest, unsigned size) {
     int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
     if (fd == -1) {

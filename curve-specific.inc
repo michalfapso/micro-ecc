@@ -47,6 +47,7 @@
 
 #if uECC_SUPPORTS_secp160r1 || uECC_SUPPORTS_secp192r1 || \
     uECC_SUPPORTS_secp224r1 || uECC_SUPPORTS_secp256r1
+uECC_ALWAYS_INLINE
 static void double_jacobian_default(uECC_word_t * X1,
                                     uECC_word_t * Y1,
                                     uECC_word_t * Z1,
@@ -95,6 +96,7 @@ static void double_jacobian_default(uECC_word_t * X1,
 }
 
 /* Computes result = x^3 + ax + b. result must not overlap x. */
+uECC_ALWAYS_INLINE
 static void x_side_default(uECC_word_t *result, const uECC_word_t *x, uECC_Curve curve) {
     uECC_word_t _3[uECC_MAX_WORDS] = {3}; /* -a = 3 */
     wordcount_t num_words = curve->num_words;
@@ -110,6 +112,7 @@ static void x_side_default(uECC_word_t *result, const uECC_word_t *x, uECC_Curve
 #if uECC_SUPPORTS_secp160r1 || uECC_SUPPORTS_secp192r1 || \
     uECC_SUPPORTS_secp256r1 || uECC_SUPPORTS_secp256k1
 /* Compute a = sqrt(a) (mod curve_p). */
+uECC_ALWAYS_INLINE
 static void mod_sqrt_default(uECC_word_t *a, uECC_Curve curve) {
     bitcount_t i;
     uECC_word_t p1[uECC_MAX_WORDS] = {1};
@@ -133,48 +136,58 @@ static void mod_sqrt_default(uECC_word_t *a, uECC_Curve curve) {
 #if uECC_SUPPORTS_secp160r1
 
 #if (uECC_OPTIMIZATION_LEVEL > 0)
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp160r1(uECC_word_t *result, uECC_word_t *product);
 #endif
 
-static const struct uECC_Curve_t curve_secp160r1 = {
-    num_words_secp160r1,
-    num_bytes_secp160r1,
-    161, /* num_n_bits */
-    { BYTES_TO_WORDS_8(FF, FF, FF, 7F, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_4(FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(57, 22, 75, CA, D3, AE, 27, F9),
-        BYTES_TO_WORDS_8(C8, F4, 01, 00, 00, 00, 00, 00),
-        BYTES_TO_WORDS_8(00, 00, 00, 00, 01, 00, 00, 00) },
-    { BYTES_TO_WORDS_8(82, FC, CB, 13, B9, 8B, C3, 68),
-        BYTES_TO_WORDS_8(89, 69, 64, 46, 28, 73, F5, 8E),
-        BYTES_TO_WORDS_4(68, B5, 96, 4A),
+uECC_ALWAYS_INLINE
+constexpr uECC_Curve_t uECC_secp160r1_copy(void) {
+    return uECC_Curve_t{
+        num_words_secp160r1,
+        num_bytes_secp160r1,
+        161, /* num_n_bits */
+        { BYTES_TO_WORDS_8(FF, FF, FF, 7F, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_4(FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(57, 22, 75, CA, D3, AE, 27, F9),
+            BYTES_TO_WORDS_8(C8, F4, 01, 00, 00, 00, 00, 00),
+            BYTES_TO_WORDS_8(00, 00, 00, 00, 01, 00, 00, 00) },
+        { BYTES_TO_WORDS_8(82, FC, CB, 13, B9, 8B, C3, 68),
+            BYTES_TO_WORDS_8(89, 69, 64, 46, 28, 73, F5, 8E),
+            BYTES_TO_WORDS_4(68, B5, 96, 4A),
 
-        BYTES_TO_WORDS_8(32, FB, C5, 7A, 37, 51, 23, 04),
-        BYTES_TO_WORDS_8(12, C9, DC, 59, 7D, 94, 68, 31),
-        BYTES_TO_WORDS_4(55, 28, A6, 23) },
-    { BYTES_TO_WORDS_8(45, FA, 65, C5, AD, D4, D4, 81),
-        BYTES_TO_WORDS_8(9F, F8, AC, 65, 8B, 7A, BD, 54),
-        BYTES_TO_WORDS_4(FC, BE, 97, 1C) },
-    &double_jacobian_default,
-#if uECC_SUPPORT_COMPRESSED_POINT
-    &mod_sqrt_default,
-#endif
-    &x_side_default,
-#if (uECC_OPTIMIZATION_LEVEL > 0)
-    &vli_mmod_fast_secp160r1
-#endif
-};
+            BYTES_TO_WORDS_8(32, FB, C5, 7A, 37, 51, 23, 04),
+            BYTES_TO_WORDS_8(12, C9, DC, 59, 7D, 94, 68, 31),
+            BYTES_TO_WORDS_4(55, 28, A6, 23) },
+        { BYTES_TO_WORDS_8(45, FA, 65, C5, AD, D4, D4, 81),
+            BYTES_TO_WORDS_8(9F, F8, AC, 65, 8B, 7A, BD, 54),
+            BYTES_TO_WORDS_4(FC, BE, 97, 1C) },
+        &double_jacobian_default,
+    #if uECC_SUPPORT_COMPRESSED_POINT
+        &mod_sqrt_default,
+    #endif
+        &x_side_default,
+    #if (uECC_OPTIMIZATION_LEVEL > 0)
+        &vli_mmod_fast_secp160r1
+    #endif
+    };
+}
 
+#ifndef uECC_DO_ALWAYS_INLINE
+static const uECC_Curve_t curve_secp160r1 = uECC_secp160r1_copy();
+uECC_ALWAYS_INLINE
 uECC_Curve uECC_secp160r1(void) { return &curve_secp160r1; }
+#endif
 
 #if (uECC_OPTIMIZATION_LEVEL > 0 && !asm_mmod_fast_secp160r1)
 /* Computes result = product % curve_p
     see http://www.isys.uni-klu.ac.at/PDF/2001-0126-MT.pdf page 354
     
     Note that this only works if log2(omega) < log2(p) / 2 */
+uECC_ALWAYS_INLINE
 static void omega_mult_secp160r1(uECC_word_t *result, const uECC_word_t *right);
 #if uECC_WORD_SIZE == 8
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp160r1(uECC_word_t *result, uECC_word_t *product) {
     uECC_word_t tmp[2 * num_words_secp160r1];
     uECC_word_t copy;
@@ -193,11 +206,15 @@ static void vli_mmod_fast_secp160r1(uECC_word_t *result, uECC_word_t *product) {
     omega_mult_secp160r1(product, tmp + num_words_secp160r1 - 1); /* Rq*c */
     uECC_vli_add(result, result, product, num_words_secp160r1); /* (C1, r) = r + Rq*c */
 
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp160r1 = uECC_secp160r1_copy();
+    #endif
     while (uECC_vli_cmp_unsafe(result, curve_secp160r1.p, num_words_secp160r1) > 0) {
         uECC_vli_sub(result, result, curve_secp160r1.p, num_words_secp160r1);
     }
 }
 
+uECC_ALWAYS_INLINE
 static void omega_mult_secp160r1(uint64_t *result, const uint64_t *right) {
     uint32_t carry;
     unsigned i;
@@ -212,6 +229,7 @@ static void omega_mult_secp160r1(uint64_t *result, const uint64_t *right) {
     result[i] = carry;
 }
 #else
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp160r1(uECC_word_t *result, uECC_word_t *product) {
     uECC_word_t tmp[2 * num_words_secp160r1];
     uECC_word_t carry;
@@ -226,6 +244,9 @@ static void vli_mmod_fast_secp160r1(uECC_word_t *result, uECC_word_t *product) {
     omega_mult_secp160r1(product, tmp + num_words_secp160r1); /* Rq*c */
     carry += uECC_vli_add(result, result, product, num_words_secp160r1); /* (C1, r) = r + Rq*c */
 
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp160r1 = uECC_secp160r1_copy();
+    #endif
     while (carry > 0) {
         --carry;
         uECC_vli_sub(result, result, curve_secp160r1.p, num_words_secp160r1);
@@ -237,6 +258,7 @@ static void vli_mmod_fast_secp160r1(uECC_word_t *result, uECC_word_t *product) {
 #endif
 
 #if uECC_WORD_SIZE == 1
+uECC_ALWAYS_INLINE
 static void omega_mult_secp160r1(uint8_t *result, const uint8_t *right) {
     uint8_t carry;
     uint8_t i;
@@ -254,6 +276,7 @@ static void omega_mult_secp160r1(uint8_t *result, const uint8_t *right) {
     }
 }
 #elif uECC_WORD_SIZE == 4
+uECC_ALWAYS_INLINE
 static void omega_mult_secp160r1(uint32_t *result, const uint32_t *right) {
     uint32_t carry;
     unsigned i;
@@ -278,45 +301,53 @@ static void omega_mult_secp160r1(uint32_t *result, const uint32_t *right) {
 #if uECC_SUPPORTS_secp192r1
 
 #if (uECC_OPTIMIZATION_LEVEL > 0)
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp192r1(uECC_word_t *result, uECC_word_t *product);
 #endif
 
-static const struct uECC_Curve_t curve_secp192r1 = {
-    num_words_secp192r1,
-    num_bytes_secp192r1,
-    192, /* num_n_bits */
-    { BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FE, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(31, 28, D2, B4, B1, C9, 6B, 14),
-        BYTES_TO_WORDS_8(36, F8, DE, 99, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(12, 10, FF, 82, FD, 0A, FF, F4),
-        BYTES_TO_WORDS_8(00, 88, A1, 43, EB, 20, BF, 7C),
-        BYTES_TO_WORDS_8(F6, 90, 30, B0, 0E, A8, 8D, 18),
+uECC_ALWAYS_INLINE
+constexpr uECC_Curve_t uECC_secp192r1_copy(void) {
+    return uECC_Curve_t{
+        num_words_secp192r1,
+        num_bytes_secp192r1,
+        192, /* num_n_bits */
+        { BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FE, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(31, 28, D2, B4, B1, C9, 6B, 14),
+            BYTES_TO_WORDS_8(36, F8, DE, 99, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(12, 10, FF, 82, FD, 0A, FF, F4),
+            BYTES_TO_WORDS_8(00, 88, A1, 43, EB, 20, BF, 7C),
+            BYTES_TO_WORDS_8(F6, 90, 30, B0, 0E, A8, 8D, 18),
 
-        BYTES_TO_WORDS_8(11, 48, 79, 1E, A1, 77, F9, 73),
-        BYTES_TO_WORDS_8(D5, CD, 24, 6B, ED, 11, 10, 63),
-        BYTES_TO_WORDS_8(78, DA, C8, FF, 95, 2B, 19, 07) },
-    { BYTES_TO_WORDS_8(B1, B9, 46, C1, EC, DE, B8, FE),
-        BYTES_TO_WORDS_8(49, 30, 24, 72, AB, E9, A7, 0F),
-        BYTES_TO_WORDS_8(E7, 80, 9C, E5, 19, 05, 21, 64) },
-    &double_jacobian_default,
-#if uECC_SUPPORT_COMPRESSED_POINT
-    &mod_sqrt_default,
-#endif
-    &x_side_default,
-#if (uECC_OPTIMIZATION_LEVEL > 0)
-    &vli_mmod_fast_secp192r1
-#endif
-};
+            BYTES_TO_WORDS_8(11, 48, 79, 1E, A1, 77, F9, 73),
+            BYTES_TO_WORDS_8(D5, CD, 24, 6B, ED, 11, 10, 63),
+            BYTES_TO_WORDS_8(78, DA, C8, FF, 95, 2B, 19, 07) },
+        { BYTES_TO_WORDS_8(B1, B9, 46, C1, EC, DE, B8, FE),
+            BYTES_TO_WORDS_8(49, 30, 24, 72, AB, E9, A7, 0F),
+            BYTES_TO_WORDS_8(E7, 80, 9C, E5, 19, 05, 21, 64) },
+        &double_jacobian_default,
+    #if uECC_SUPPORT_COMPRESSED_POINT
+        &mod_sqrt_default,
+    #endif
+        &x_side_default,
+    #if (uECC_OPTIMIZATION_LEVEL > 0)
+        &vli_mmod_fast_secp192r1
+    #endif
+    };
+}
 
+#ifndef uECC_DO_ALWAYS_INLINE
+static const uECC_Curve_t curve_secp192r1 = uECC_secp192r1_copy();
+uECC_ALWAYS_INLINE
 uECC_Curve uECC_secp192r1(void) { return &curve_secp192r1; }
+#endif
 
 #if (uECC_OPTIMIZATION_LEVEL > 0)
-/* Computes result = product % curve_p.
-   See algorithm 5 and 6 from http://www.isys.uni-klu.ac.at/PDF/2001-0126-MT.pdf */
+// Computes result = product % curve_p.  See algorithm 5 and 6 from http://www.isys.uni-klu.ac.at/PDF/2001-0126-MT.pdf
 #if uECC_WORD_SIZE == 1
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp192r1(uint8_t *result, uint8_t *product) {
     uint8_t tmp[num_words_secp192r1];
     uint8_t carry;
@@ -344,11 +375,15 @@ static void vli_mmod_fast_secp192r1(uint8_t *result, uint8_t *product) {
     tmp[16] = tmp[17] = tmp[18] = tmp[19] = tmp[20] = tmp[21] = tmp[22] = tmp[23] = 0;
     carry += uECC_vli_add(result, result, tmp, num_words_secp192r1);
     
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp192r1 = uECC_secp192r1_copy();
+    #endif
     while (carry || uECC_vli_cmp_unsafe(curve_secp192r1.p, result, num_words_secp192r1) != 1) {
         carry -= uECC_vli_sub(result, result, curve_secp192r1.p, num_words_secp192r1);
     }
 }
 #elif uECC_WORD_SIZE == 4
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp192r1(uint32_t *result, uint32_t *product) {
     uint32_t tmp[num_words_secp192r1];
     int carry;
@@ -370,11 +405,15 @@ static void vli_mmod_fast_secp192r1(uint32_t *result, uint32_t *product) {
     tmp[4] = tmp[5] = 0;
     carry += uECC_vli_add(result, result, tmp, num_words_secp192r1);
     
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp192r1 = uECC_secp192r1_copy();
+    #endif
     while (carry || uECC_vli_cmp_unsafe(curve_secp192r1.p, result, num_words_secp192r1) != 1) {
         carry -= uECC_vli_sub(result, result, curve_secp192r1.p, num_words_secp192r1);
     }
 }
 #else
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp192r1(uint64_t *result, uint64_t *product) {
     uint64_t tmp[num_words_secp192r1];
     int carry;
@@ -393,6 +432,9 @@ static void vli_mmod_fast_secp192r1(uint64_t *result, uint64_t *product) {
     tmp[2] = 0;
     carry += uECC_vli_add(result, result, tmp, num_words_secp192r1);
     
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp192r1 = uECC_secp192r1_copy();
+    #endif
     while (carry || uECC_vli_cmp_unsafe(curve_secp192r1.p, result, num_words_secp192r1) != 1) {
         carry -= uECC_vli_sub(result, result, curve_secp192r1.p, num_words_secp192r1);
     }
@@ -405,52 +447,62 @@ static void vli_mmod_fast_secp192r1(uint64_t *result, uint64_t *product) {
 #if uECC_SUPPORTS_secp224r1
 
 #if uECC_SUPPORT_COMPRESSED_POINT
+uECC_ALWAYS_INLINE
 static void mod_sqrt_secp224r1(uECC_word_t *a, uECC_Curve curve);
 #endif
 #if (uECC_OPTIMIZATION_LEVEL > 0)
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp224r1(uECC_word_t *result, uECC_word_t *product);
 #endif
 
-static const struct uECC_Curve_t curve_secp224r1 = {
-    num_words_secp224r1,
-    num_bytes_secp224r1,
-    224, /* num_n_bits */
-    { BYTES_TO_WORDS_8(01, 00, 00, 00, 00, 00, 00, 00),
-        BYTES_TO_WORDS_8(00, 00, 00, 00, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_4(FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(3D, 2A, 5C, 5C, 45, 29, DD, 13),
-        BYTES_TO_WORDS_8(3E, F0, B8, E0, A2, 16, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_4(FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(21, 1D, 5C, 11, D6, 80, 32, 34),
-        BYTES_TO_WORDS_8(22, 11, C2, 56, D3, C1, 03, 4A),
-        BYTES_TO_WORDS_8(B9, 90, 13, 32, 7F, BF, B4, 6B),
-        BYTES_TO_WORDS_4(BD, 0C, 0E, B7),
+uECC_ALWAYS_INLINE
+constexpr uECC_Curve_t uECC_secp224r1_copy(void) {
+    return uECC_Curve_t{
+        num_words_secp224r1,
+        num_bytes_secp224r1,
+        224, /* num_n_bits */
+        { BYTES_TO_WORDS_8(01, 00, 00, 00, 00, 00, 00, 00),
+            BYTES_TO_WORDS_8(00, 00, 00, 00, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_4(FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(3D, 2A, 5C, 5C, 45, 29, DD, 13),
+            BYTES_TO_WORDS_8(3E, F0, B8, E0, A2, 16, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_4(FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(21, 1D, 5C, 11, D6, 80, 32, 34),
+            BYTES_TO_WORDS_8(22, 11, C2, 56, D3, C1, 03, 4A),
+            BYTES_TO_WORDS_8(B9, 90, 13, 32, 7F, BF, B4, 6B),
+            BYTES_TO_WORDS_4(BD, 0C, 0E, B7),
 
-        BYTES_TO_WORDS_8(34, 7E, 00, 85, 99, 81, D5, 44),
-        BYTES_TO_WORDS_8(64, 47, 07, 5A, A0, 75, 43, CD),
-        BYTES_TO_WORDS_8(E6, DF, 22, 4C, FB, 23, F7, B5),
-        BYTES_TO_WORDS_4(88, 63, 37, BD) },
-    { BYTES_TO_WORDS_8(B4, FF, 55, 23, 43, 39, 0B, 27),
-        BYTES_TO_WORDS_8(BA, D8, BF, D7, B7, B0, 44, 50),
-        BYTES_TO_WORDS_8(56, 32, 41, F5, AB, B3, 04, 0C),
-        BYTES_TO_WORDS_4(85, 0A, 05, B4) },
-    &double_jacobian_default,
-#if uECC_SUPPORT_COMPRESSED_POINT
-    &mod_sqrt_secp224r1,
-#endif
-    &x_side_default,
-#if (uECC_OPTIMIZATION_LEVEL > 0)
-    &vli_mmod_fast_secp224r1
-#endif
-};
+            BYTES_TO_WORDS_8(34, 7E, 00, 85, 99, 81, D5, 44),
+            BYTES_TO_WORDS_8(64, 47, 07, 5A, A0, 75, 43, CD),
+            BYTES_TO_WORDS_8(E6, DF, 22, 4C, FB, 23, F7, B5),
+            BYTES_TO_WORDS_4(88, 63, 37, BD) },
+        { BYTES_TO_WORDS_8(B4, FF, 55, 23, 43, 39, 0B, 27),
+            BYTES_TO_WORDS_8(BA, D8, BF, D7, B7, B0, 44, 50),
+            BYTES_TO_WORDS_8(56, 32, 41, F5, AB, B3, 04, 0C),
+            BYTES_TO_WORDS_4(85, 0A, 05, B4) },
+        &double_jacobian_default,
+    #if uECC_SUPPORT_COMPRESSED_POINT
+        &mod_sqrt_secp224r1,
+    #endif
+        &x_side_default,
+    #if (uECC_OPTIMIZATION_LEVEL > 0)
+        &vli_mmod_fast_secp224r1
+    #endif
+    };
+}
 
+#ifndef uECC_DO_ALWAYS_INLINE
+static const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+uECC_ALWAYS_INLINE
 uECC_Curve uECC_secp224r1(void) { return &curve_secp224r1; }
+#endif
 
 
 #if uECC_SUPPORT_COMPRESSED_POINT
-/* Routine 3.2.4 RS;  from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+// Routine 3.2.4 RS;  from http://www.nsa.gov/ia/_files/nist-routines.pdf
+uECC_ALWAYS_INLINE
 static void mod_sqrt_secp224r1_rs(uECC_word_t *d1,
                                   uECC_word_t *e1,
                                   uECC_word_t *f1,
@@ -459,6 +511,9 @@ static void mod_sqrt_secp224r1_rs(uECC_word_t *d1,
                                   const uECC_word_t *f0) {
     uECC_word_t t[num_words_secp224r1];
 
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+    #endif
     uECC_vli_modSquare_fast(t, d0, &curve_secp224r1);                    /* t <-- d0 ^ 2 */
     uECC_vli_modMult_fast(e1, d0, e0, &curve_secp224r1);                 /* e1 <-- d0 * e0 */
     uECC_vli_modAdd(d1, t, f0, curve_secp224r1.p, num_words_secp224r1);  /* d1 <-- t  + f0 */
@@ -468,7 +523,8 @@ static void mod_sqrt_secp224r1_rs(uECC_word_t *d1,
     uECC_vli_modAdd(f1, f1, f1, curve_secp224r1.p, num_words_secp224r1); /* f1 <-- f1 + f1 */
 }
 
-/* Routine 3.2.5 RSS;  from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+// Routine 3.2.5 RSS;  from http://www.nsa.gov/ia/_files/nist-routines.pdf
+uECC_ALWAYS_INLINE
 static void mod_sqrt_secp224r1_rss(uECC_word_t *d1,
                                    uECC_word_t *e1,
                                    uECC_word_t *f1,
@@ -486,7 +542,8 @@ static void mod_sqrt_secp224r1_rss(uECC_word_t *d1,
     }
 }
 
-/* Routine 3.2.6 RM;  from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+// Routine 3.2.6 RM;  from http://www.nsa.gov/ia/_files/nist-routines.pdf
+uECC_ALWAYS_INLINE
 static void mod_sqrt_secp224r1_rm(uECC_word_t *d2,
                                   uECC_word_t *e2,
                                   uECC_word_t *f2,
@@ -498,6 +555,9 @@ static void mod_sqrt_secp224r1_rm(uECC_word_t *d2,
     uECC_word_t t1[num_words_secp224r1];
     uECC_word_t t2[num_words_secp224r1];
 
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+    #endif
     uECC_vli_modMult_fast(t1, e0, e1, &curve_secp224r1); /* t1 <-- e0 * e1 */
     uECC_vli_modMult_fast(t1, t1, c, &curve_secp224r1);  /* t1 <-- t1 * c */
     /* t1 <-- p  - t1 */
@@ -514,7 +574,8 @@ static void mod_sqrt_secp224r1_rm(uECC_word_t *d2,
     uECC_vli_set(d2, t2, num_words_secp224r1); /* d2 <-- t2 */
 }
 
-/* Routine 3.2.7 RP;  from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+// Routine 3.2.7 RP;  from http://www.nsa.gov/ia/_files/nist-routines.pdf
+uECC_ALWAYS_INLINE
 static void mod_sqrt_secp224r1_rp(uECC_word_t *d1,
                                   uECC_word_t *e1,
                                   uECC_word_t *f1,
@@ -528,6 +589,9 @@ static void mod_sqrt_secp224r1_rp(uECC_word_t *d1,
 
     uECC_vli_set(d0, r, num_words_secp224r1); /* d0 <-- r */
     /* f0 <-- p  - c */
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+    #endif
     uECC_vli_modSub(f0, curve_secp224r1.p, c, curve_secp224r1.p, num_words_secp224r1);
     for (i = 0; i <= 6; i++) {
         mod_sqrt_secp224r1_rss(d1, e1, f1, d0, e0, f0, pow2i); /* RSS (d1,e1,f1,d0,e0,f0,2^i) */
@@ -540,7 +604,8 @@ static void mod_sqrt_secp224r1_rp(uECC_word_t *d1,
 }
 
 /* Compute a = sqrt(a) (mod curve_p). */
-/* Routine 3.2.8 mp_mod_sqrt_224; from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+// Routine 3.2.8 mp_mod_sqrt_224; from http://www.nsa.gov/ia/_files/nist-routines.pdf
+uECC_ALWAYS_INLINE
 static void mod_sqrt_secp224r1(uECC_word_t *a, uECC_Curve curve) {
     bitcount_t i;
     uECC_word_t e1[num_words_secp224r1];
@@ -562,15 +627,18 @@ static void mod_sqrt_secp224r1(uECC_word_t *a, uECC_Curve curve) {
                 break;
         }
     }
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+    #endif
     uECC_vli_modInv(f1, e0, curve_secp224r1.p, num_words_secp224r1); /* f1 <-- 1 / e0 */
     uECC_vli_modMult_fast(a, d0, f1, &curve_secp224r1);              /* a  <-- d0 / e0 */
 }
 #endif /* uECC_SUPPORT_COMPRESSED_POINT */
 
 #if (uECC_OPTIMIZATION_LEVEL > 0)
-/* Computes result = product % curve_p
-   from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+// Computes result = product % curve_p from http://www.nsa.gov/ia/_files/nist-routines.pdf
 #if uECC_WORD_SIZE == 1
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp224r1(uint8_t *result, uint8_t *product) {
     uint8_t tmp[num_words_secp224r1];
     int8_t carry;
@@ -615,6 +683,9 @@ static void vli_mmod_fast_secp224r1(uint8_t *result, uint8_t *product) {
     tmp[24] = tmp[25] = tmp[26] = tmp[27] = 0;
     carry -= uECC_vli_sub(result, result, tmp, num_words_secp224r1);
 
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+    #endif
     if (carry < 0) {
         do {
             carry += uECC_vli_add(result, result, curve_secp224r1.p, num_words_secp224r1);
@@ -626,6 +697,7 @@ static void vli_mmod_fast_secp224r1(uint8_t *result, uint8_t *product) {
     }
 }
 #elif uECC_WORD_SIZE == 4
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp224r1(uint32_t *result, uint32_t *product)
 {
     uint32_t tmp[num_words_secp224r1];
@@ -666,6 +738,9 @@ static void vli_mmod_fast_secp224r1(uint32_t *result, uint32_t *product)
     tmp[3] = tmp[4] = tmp[5] = tmp[6] = 0;
     carry -= uECC_vli_sub(result, result, tmp, num_words_secp224r1);
 
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+    #endif
     if (carry < 0) {
         do {
             carry += uECC_vli_add(result, result, curve_secp224r1.p, num_words_secp224r1);
@@ -677,6 +752,7 @@ static void vli_mmod_fast_secp224r1(uint32_t *result, uint32_t *product)
     }
 }
 #else
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp224r1(uint64_t *result, uint64_t *product)
 {
     uint64_t tmp[num_words_secp224r1];
@@ -712,6 +788,9 @@ static void vli_mmod_fast_secp224r1(uint64_t *result, uint64_t *product)
     tmp[2] = tmp[3] = 0;
     carry -= uECC_vli_sub(result, result, tmp, num_words_secp224r1);
 
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp224r1 = uECC_secp224r1_copy();
+    #endif
     if (carry < 0) {
         do {
             carry += uECC_vli_add(result, result, curve_secp224r1.p, num_words_secp224r1);
@@ -730,51 +809,59 @@ static void vli_mmod_fast_secp224r1(uint64_t *result, uint64_t *product)
 #if uECC_SUPPORTS_secp256r1
 
 #if (uECC_OPTIMIZATION_LEVEL > 0)
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp256r1(uECC_word_t *result, uECC_word_t *product);
 #endif
 
-static const struct uECC_Curve_t curve_secp256r1 = {
-    num_words_secp256r1,
-    num_bytes_secp256r1,
-    256, /* num_n_bits */
-    { BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, 00, 00, 00, 00),
-        BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00),
-        BYTES_TO_WORDS_8(01, 00, 00, 00, FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(51, 25, 63, FC, C2, CA, B9, F3),
-        BYTES_TO_WORDS_8(84, 9E, 17, A7, AD, FA, E6, BC),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(00, 00, 00, 00, FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(96, C2, 98, D8, 45, 39, A1, F4),
-        BYTES_TO_WORDS_8(A0, 33, EB, 2D, 81, 7D, 03, 77),
-        BYTES_TO_WORDS_8(F2, 40, A4, 63, E5, E6, BC, F8),
-        BYTES_TO_WORDS_8(47, 42, 2C, E1, F2, D1, 17, 6B),
+uECC_ALWAYS_INLINE
+constexpr uECC_Curve_t uECC_secp256r1_copy(void) {
+    return uECC_Curve_t{
+        num_words_secp256r1,
+        num_bytes_secp256r1,
+        256, /* num_n_bits */
+        { BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, 00, 00, 00, 00),
+            BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00),
+            BYTES_TO_WORDS_8(01, 00, 00, 00, FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(51, 25, 63, FC, C2, CA, B9, F3),
+            BYTES_TO_WORDS_8(84, 9E, 17, A7, AD, FA, E6, BC),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(00, 00, 00, 00, FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(96, C2, 98, D8, 45, 39, A1, F4),
+            BYTES_TO_WORDS_8(A0, 33, EB, 2D, 81, 7D, 03, 77),
+            BYTES_TO_WORDS_8(F2, 40, A4, 63, E5, E6, BC, F8),
+            BYTES_TO_WORDS_8(47, 42, 2C, E1, F2, D1, 17, 6B),
 
-        BYTES_TO_WORDS_8(F5, 51, BF, 37, 68, 40, B6, CB),
-        BYTES_TO_WORDS_8(CE, 5E, 31, 6B, 57, 33, CE, 2B),
-        BYTES_TO_WORDS_8(16, 9E, 0F, 7C, 4A, EB, E7, 8E),
-        BYTES_TO_WORDS_8(9B, 7F, 1A, FE, E2, 42, E3, 4F) },
-    { BYTES_TO_WORDS_8(4B, 60, D2, 27, 3E, 3C, CE, 3B),
-        BYTES_TO_WORDS_8(F6, B0, 53, CC, B0, 06, 1D, 65),
-        BYTES_TO_WORDS_8(BC, 86, 98, 76, 55, BD, EB, B3),
-        BYTES_TO_WORDS_8(E7, 93, 3A, AA, D8, 35, C6, 5A) },
-    &double_jacobian_default,
-#if uECC_SUPPORT_COMPRESSED_POINT
-    &mod_sqrt_default,
-#endif
-    &x_side_default,
-#if (uECC_OPTIMIZATION_LEVEL > 0)
-    &vli_mmod_fast_secp256r1
-#endif
-};
+            BYTES_TO_WORDS_8(F5, 51, BF, 37, 68, 40, B6, CB),
+            BYTES_TO_WORDS_8(CE, 5E, 31, 6B, 57, 33, CE, 2B),
+            BYTES_TO_WORDS_8(16, 9E, 0F, 7C, 4A, EB, E7, 8E),
+            BYTES_TO_WORDS_8(9B, 7F, 1A, FE, E2, 42, E3, 4F) },
+        { BYTES_TO_WORDS_8(4B, 60, D2, 27, 3E, 3C, CE, 3B),
+            BYTES_TO_WORDS_8(F6, B0, 53, CC, B0, 06, 1D, 65),
+            BYTES_TO_WORDS_8(BC, 86, 98, 76, 55, BD, EB, B3),
+            BYTES_TO_WORDS_8(E7, 93, 3A, AA, D8, 35, C6, 5A) },
+        &double_jacobian_default,
+    #if uECC_SUPPORT_COMPRESSED_POINT
+        &mod_sqrt_default,
+    #endif
+        &x_side_default,
+    #if (uECC_OPTIMIZATION_LEVEL > 0)
+        &vli_mmod_fast_secp256r1
+    #endif
+    };
+}
 
+#ifndef uECC_DO_ALWAYS_INLINE
+static const uECC_Curve_t curve_secp256r1 = uECC_secp256r1_copy();
+uECC_ALWAYS_INLINE
 uECC_Curve uECC_secp256r1(void) { return &curve_secp256r1; }
+#endif
 
 
 #if (uECC_OPTIMIZATION_LEVEL > 0 && !asm_mmod_fast_secp256r1)
-/* Computes result = product % curve_p
-   from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+// Computes result = product % curve_p from http://www.nsa.gov/ia/_files/nist-routines.pdf
 #if uECC_WORD_SIZE == 1
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp256r1(uint8_t *result, uint8_t *product) {
     uint8_t tmp[num_words_secp256r1];
     int8_t carry;
@@ -869,6 +956,9 @@ static void vli_mmod_fast_secp256r1(uint8_t *result, uint8_t *product) {
     tmp[28] = product[52]; tmp[29] = product[53]; tmp[30] = product[54]; tmp[31] = product[55];
     carry -= uECC_vli_sub(result, result, tmp, num_words_secp256r1);
     
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp256r1 = uECC_secp256r1_copy();
+    #endif
     if (carry < 0) {
         do {
             carry += uECC_vli_add(result, result, curve_secp256r1.p, num_words_secp256r1);
@@ -880,6 +970,7 @@ static void vli_mmod_fast_secp256r1(uint8_t *result, uint8_t *product) {
     }
 }
 #elif uECC_WORD_SIZE == 4
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp256r1(uint32_t *result, uint32_t *product) {
     uint32_t tmp[num_words_secp256r1];
     int carry;
@@ -967,6 +1058,9 @@ static void vli_mmod_fast_secp256r1(uint32_t *result, uint32_t *product) {
     tmp[7] = product[13];
     carry -= uECC_vli_sub(result, result, tmp, num_words_secp256r1);
     
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp256r1 = uECC_secp256r1_copy();
+    #endif
     if (carry < 0) {
         do {
             carry += uECC_vli_add(result, result, curve_secp256r1.p, num_words_secp256r1);
@@ -978,6 +1072,7 @@ static void vli_mmod_fast_secp256r1(uint32_t *result, uint32_t *product) {
     }
 }
 #else
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp256r1(uint64_t *result, uint64_t *product) {
     uint64_t tmp[num_words_secp256r1];
     int carry;
@@ -1042,6 +1137,9 @@ static void vli_mmod_fast_secp256r1(uint64_t *result, uint64_t *product) {
     tmp[3] = product[6] & 0xffffffff00000000ull;
     carry -= uECC_vli_sub(result, result, tmp, num_words_secp256r1);
     
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp256r1 = uECC_secp256r1_copy();
+    #endif
     if (carry < 0) {
         do {
             carry += uECC_vli_add(result, result, curve_secp256r1.p, num_words_secp256r1);
@@ -1059,54 +1157,65 @@ static void vli_mmod_fast_secp256r1(uint64_t *result, uint64_t *product) {
 
 #if uECC_SUPPORTS_secp256k1
 
+uECC_ALWAYS_INLINE
 static void double_jacobian_secp256k1(uECC_word_t * X1,
                                       uECC_word_t * Y1,
                                       uECC_word_t * Z1,
                                       uECC_Curve curve);
+uECC_ALWAYS_INLINE
 static void x_side_secp256k1(uECC_word_t *result, const uECC_word_t *x, uECC_Curve curve);
 #if (uECC_OPTIMIZATION_LEVEL > 0)
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp256k1(uECC_word_t *result, uECC_word_t *product);
 #endif
 
-static const struct uECC_Curve_t curve_secp256k1 = {
-    num_words_secp256k1,
-    num_bytes_secp256k1,
-    256, /* num_n_bits */
-    { BYTES_TO_WORDS_8(2F, FC, FF, FF, FE, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(41, 41, 36, D0, 8C, 5E, D2, BF),
-        BYTES_TO_WORDS_8(3B, A0, 48, AF, E6, DC, AE, BA),
-        BYTES_TO_WORDS_8(FE, FF, FF, FF, FF, FF, FF, FF),
-        BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
-    { BYTES_TO_WORDS_8(98, 17, F8, 16, 5B, 81, F2, 59),
-        BYTES_TO_WORDS_8(D9, 28, CE, 2D, DB, FC, 9B, 02),
-        BYTES_TO_WORDS_8(07, 0B, 87, CE, 95, 62, A0, 55),
-        BYTES_TO_WORDS_8(AC, BB, DC, F9, 7E, 66, BE, 79),
+uECC_ALWAYS_INLINE
+constexpr uECC_Curve_t uECC_secp256k1_copy(void) {
+    return uECC_Curve_t{
+        num_words_secp256k1,
+        num_bytes_secp256k1,
+        256, /* num_n_bits */
+        { BYTES_TO_WORDS_8(2F, FC, FF, FF, FE, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(41, 41, 36, D0, 8C, 5E, D2, BF),
+            BYTES_TO_WORDS_8(3B, A0, 48, AF, E6, DC, AE, BA),
+            BYTES_TO_WORDS_8(FE, FF, FF, FF, FF, FF, FF, FF),
+            BYTES_TO_WORDS_8(FF, FF, FF, FF, FF, FF, FF, FF) },
+        { BYTES_TO_WORDS_8(98, 17, F8, 16, 5B, 81, F2, 59),
+            BYTES_TO_WORDS_8(D9, 28, CE, 2D, DB, FC, 9B, 02),
+            BYTES_TO_WORDS_8(07, 0B, 87, CE, 95, 62, A0, 55),
+            BYTES_TO_WORDS_8(AC, BB, DC, F9, 7E, 66, BE, 79),
 
-        BYTES_TO_WORDS_8(B8, D4, 10, FB, 8F, D0, 47, 9C),
-        BYTES_TO_WORDS_8(19, 54, 85, A6, 48, B4, 17, FD),
-        BYTES_TO_WORDS_8(A8, 08, 11, 0E, FC, FB, A4, 5D),
-        BYTES_TO_WORDS_8(65, C4, A3, 26, 77, DA, 3A, 48) },
-    { BYTES_TO_WORDS_8(07, 00, 00, 00, 00, 00, 00, 00),
-        BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00),
-        BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00),
-        BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00) },
-    &double_jacobian_secp256k1,
-#if uECC_SUPPORT_COMPRESSED_POINT
-    &mod_sqrt_default,
-#endif
-    &x_side_secp256k1,
-#if (uECC_OPTIMIZATION_LEVEL > 0)
-    &vli_mmod_fast_secp256k1
-#endif
-};
+            BYTES_TO_WORDS_8(B8, D4, 10, FB, 8F, D0, 47, 9C),
+            BYTES_TO_WORDS_8(19, 54, 85, A6, 48, B4, 17, FD),
+            BYTES_TO_WORDS_8(A8, 08, 11, 0E, FC, FB, A4, 5D),
+            BYTES_TO_WORDS_8(65, C4, A3, 26, 77, DA, 3A, 48) },
+        { BYTES_TO_WORDS_8(07, 00, 00, 00, 00, 00, 00, 00),
+            BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00),
+            BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00),
+            BYTES_TO_WORDS_8(00, 00, 00, 00, 00, 00, 00, 00) },
+        &double_jacobian_secp256k1,
+    #if uECC_SUPPORT_COMPRESSED_POINT
+        &mod_sqrt_default,
+    #endif
+        &x_side_secp256k1,
+    #if (uECC_OPTIMIZATION_LEVEL > 0)
+        &vli_mmod_fast_secp256k1
+    #endif
+    };
+}
 
+#ifndef uECC_DO_ALWAYS_INLINE
+static const uECC_Curve_t curve_secp256k1 = uECC_secp256k1_copy();
+uECC_ALWAYS_INLINE
 uECC_Curve uECC_secp256k1(void) { return &curve_secp256k1; }
+#endif
 
 
 /* Double in place */
+uECC_ALWAYS_INLINE
 static void double_jacobian_secp256k1(uECC_word_t * X1,
                                       uECC_word_t * Y1,
                                       uECC_word_t * Z1,
@@ -1146,6 +1255,7 @@ static void double_jacobian_secp256k1(uECC_word_t * X1,
 }
 
 /* Computes result = x^3 + b. result must not overlap x. */
+uECC_ALWAYS_INLINE
 static void x_side_secp256k1(uECC_word_t *result, const uECC_word_t *x, uECC_Curve curve) {
     uECC_vli_modSquare_fast(result, x, curve);                                /* r = x^2 */
     uECC_vli_modMult_fast(result, result, x, curve);                          /* r = x^3 */
@@ -1153,7 +1263,9 @@ static void x_side_secp256k1(uECC_word_t *result, const uECC_word_t *x, uECC_Cur
 }
 
 #if (uECC_OPTIMIZATION_LEVEL > 0 && !asm_mmod_fast_secp256k1)
+uECC_ALWAYS_INLINE
 static void omega_mult_secp256k1(uECC_word_t *result, const uECC_word_t *right);
+uECC_ALWAYS_INLINE
 static void vli_mmod_fast_secp256k1(uECC_word_t *result, uECC_word_t *product) {
     uECC_word_t tmp[2 * num_words_secp256k1];
     uECC_word_t carry;
@@ -1168,6 +1280,9 @@ static void vli_mmod_fast_secp256k1(uECC_word_t *result, uECC_word_t *product) {
     omega_mult_secp256k1(product, tmp + num_words_secp256k1); /* Rq*c */
     carry += uECC_vli_add(result, result, product, num_words_secp256k1); /* (C1, r) = r + Rq*c */
     
+    #ifdef uECC_DO_ALWAYS_INLINE
+    const uECC_Curve_t curve_secp256k1 = uECC_secp256k1_copy();
+    #endif
     while (carry > 0) {
         --carry;
         uECC_vli_sub(result, result, curve_secp256k1.p, num_words_secp256k1);
@@ -1178,6 +1293,7 @@ static void vli_mmod_fast_secp256k1(uECC_word_t *result, uECC_word_t *product) {
 }
 
 #if uECC_WORD_SIZE == 1
+uECC_ALWAYS_INLINE
 static void omega_mult_secp256k1(uint8_t * result, const uint8_t * right) {
     /* Multiply by (2^32 + 2^9 + 2^8 + 2^7 + 2^6 + 2^4 + 1). */
     uECC_word_t r0 = 0;
@@ -1208,6 +1324,7 @@ static void omega_mult_secp256k1(uint8_t * result, const uint8_t * right) {
         uECC_vli_add(result + 4, result + 4, right, num_words_secp256k1); 
 }
 #elif uECC_WORD_SIZE == 4
+uECC_ALWAYS_INLINE
 static void omega_mult_secp256k1(uint32_t * result, const uint32_t * right) {
     /* Multiply by (2^9 + 2^8 + 2^7 + 2^6 + 2^4 + 1). */
     uint32_t carry = 0;
@@ -1224,6 +1341,7 @@ static void omega_mult_secp256k1(uint32_t * result, const uint32_t * right) {
         uECC_vli_add(result + 1, result + 1, right, num_words_secp256k1); 
 }
 #else
+uECC_ALWAYS_INLINE
 static void omega_mult_secp256k1(uint64_t * result, const uint64_t * right) {
     uECC_word_t r0 = 0;
     uECC_word_t r1 = 0;
